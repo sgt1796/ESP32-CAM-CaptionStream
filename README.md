@@ -14,6 +14,16 @@ A lightweight system that streams video from an ESP32-CAM and overlays real-time
 
 ---
 
+## Prerequisite
+
+Flash your ESP32 with Arduino's pre-set ESP32 CameraSever code, you can follow this [tutorial](https://randomnerdtutorials.com/esp32-cam-video-streaming-web-server-camera-home-assistant/).
+
+The code to be flashed into camera can be found here: [https://github.com/espressif/arduino-esp32/tree/master/libraries/ESP32/examples/Camera/CameraWebServer]
+
+The camera should connect to your wifi and streaming to your local ip.
+
+---
+
 ## Setup
 
 1. **Install dependencies**:
