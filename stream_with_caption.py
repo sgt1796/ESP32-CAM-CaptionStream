@@ -1,16 +1,20 @@
 import asyncio
-import aiohttp
 import cv2
 import time
 import numpy as np
 import requests
 from requests.exceptions import ChunkedEncodingError, ConnectionError
 
+## For image captioning
+from llm import LLM
+import base64
+
 
 ESP32_STREAM_URL = "http://192.168.0.199:81/stream"
-CAPTION_API_URL = "https://localhost/tinytalk/api/image/caption"
 CAPTION_INTERVAL = 2  # seconds
 MODEL = "openai" # or "gemini"
+llm = LLM(model=MODEL)
+
 
 caption = ""
 latest_jpeg = None
@@ -44,20 +48,22 @@ async def caption_loop():
         await asyncio.sleep(CAPTION_INTERVAL)
         if latest_jpeg:
             try:
-                async with aiohttp.ClientSession(connector=aiohttp.TCPConnector(ssl=False)) as session:
-                    data = aiohttp.FormData()
-                    data.add_field("base64jpg", "")
-                    data.add_field("model", MODEL)
-                    data.add_field("image_file", latest_jpeg, filename="frame.jpg", content_type="image/jpeg")
-                    async with session.post(CAPTION_API_URL, data=data) as resp:
-                        if resp.status == 200:
-                            result = await resp.text()
-                            caption = result.strip()
-                            print(f"[Caption] {caption}\n")
-                        else:
-                            print(f"[ERROR {resp.status}\n] {await resp.text()}")
+                # Convert JPEG bytes to base64 string
+                b64jpg = base64.b64encode(latest_jpeg).decode("utf-8")
+
+                # Direct call: for OpenAI, you can use imgbase64
+                if MODEL == "openai":
+                    # Use LLM image_caption function directly
+                    result = llm.image_caption(imgbase64=b64jpg)
+                else:
+                    # For Gemini, also support imgbase64 or PIL image
+                    result = llm.image_caption(imgbase64=b64jpg)
+
+                caption = result.strip()
+                print(f"[Caption] {caption}\n")
             except Exception as e:
                 print(f"[Caption Exception] {e}\n")
+
 
 def run_display_loop():
     global latest_jpeg, caption

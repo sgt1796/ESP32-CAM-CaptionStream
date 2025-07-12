@@ -7,7 +7,7 @@ $ python app.py
 import asyncio
 import threading
 import time
-from io import BytesIO
+import base64
 from textwrap import wrap
 
 import aiohttp
@@ -18,10 +18,16 @@ from flask import Flask, Response, render_template_string
 
 # ─── CONFIG ────────────────────────────────────────────────────────────────────
 ESP32_STREAM_URL = "http://192.168.0.199:81/stream"
-CAPTION_API_URL = "https://localhost/tinytalk/api/image/caption"
+CAPTION_API_URL = None #"https://localhost/tinytalk/api/image/caption"
 CAPTION_INTERVAL = 2        # seconds
 MODEL            = "openai" # or "gemini"
 VERIFY_SSL       = False    # self-signed TLS on localhost
+
+llm = None
+if not CAPTION_API_URL:
+    # initialise LLM client
+    from llm import LLM
+    llm = LLM(model=MODEL)  # "openai" or "gemini"
 
 # ─── GLOBAL STATE ──────────────────────────────────────────────────────────────
 latest_jpeg   : bytes = None   # raw JPEG from camera
@@ -51,29 +57,46 @@ def mjpeg_reader() -> None:
 async def caption_worker() -> None:
     """Every CAPTION_INTERVAL s send latest frame to caption API."""
     global latest_caption, latest_jpeg
-    connector = aiohttp.TCPConnector(ssl=VERIFY_SSL is True)
-    async with aiohttp.ClientSession(connector=connector) as session:
+    if CAPTION_API_URL:
+        connector = aiohttp.TCPConnector(ssl=VERIFY_SSL is True)
+        async with aiohttp.ClientSession(connector=connector) as session:
+            while not stop_event.is_set():
+                await asyncio.sleep(CAPTION_INTERVAL)
+                if not latest_jpeg:
+                    continue
+                try:
+                    data = aiohttp.FormData()
+                    data.add_field("base64jpg", "")                          # kept for API compatibility
+                    data.add_field("model", MODEL)
+                    # send binary JPEG
+                    data.add_field("image_file", latest_jpeg,
+                                filename="frame.jpg",
+                                content_type="image/jpeg")
+                    async with session.post(CAPTION_API_URL, data=data) as r:
+                        if r.status == 200:
+                            latest_caption = (await r.text()).strip()
+                            print(f"[Caption] {latest_caption}")
+                        else:
+                            err = await r.text()
+                            print(f"[ERROR {r.status}] {err}")
+                except Exception as e:
+                    print(f"[Caption exception] {e}")
+    else:
         while not stop_event.is_set():
             await asyncio.sleep(CAPTION_INTERVAL)
             if not latest_jpeg:
                 continue
             try:
-                data = aiohttp.FormData()
-                data.add_field("base64jpg", "")                          # kept for API compatibility
-                data.add_field("model", MODEL)
-                # send binary JPEG
-                data.add_field("image_file", latest_jpeg,
-                               filename="frame.jpg",
-                               content_type="image/jpeg")
-                async with session.post(CAPTION_API_URL, data=data) as r:
-                    if r.status == 200:
-                        latest_caption = (await r.text()).strip()
-                        print(f"[Caption] {latest_caption}")
-                    else:
-                        err = await r.text()
-                        print(f"[ERROR {r.status}] {err}")
+                # Convert image to base64 for LLM input
+                b64jpg = base64.b64encode(latest_jpeg).decode("utf-8")
+                if MODEL == "openai":
+                    result = llm.image_caption(imgbase64=b64jpg)
+                else:
+                    result = llm.image_caption(imgbase64=b64jpg, task = "caption")
+                latest_caption = result.strip()
+                print(f"[Caption LLM] {latest_caption}")
             except Exception as e:
-                print(f"[Caption exception] {e}")
+                print(f"[Caption LLM Exception] {e}")
 
 def start_caption_loop():
     """Run the async caption worker inside its own OS thread."""
