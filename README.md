@@ -24,7 +24,6 @@ A lightweight system that streams video from an ESP32-CAM and overlays real-time
 
    ```python
    ESP32_STREAM_URL = "http://<your_esp32_ip>:81/stream"
-   CAPTION_API_URL = "https://localhost/tinytalk/api/image/caption" # endpoint for image caption
    MODEL = "openai"  # or "gemini"
    ```
 
@@ -50,6 +49,5 @@ Then go to `http://127.0.0.1:5000` to check the video and caption.
 ## Notes
 
 * Wi-Fi credentials for ESP32-CAM should be moved to `secrets.h` and excluded via `.gitignore`.
-* Requires an existing caption API endpoint accepting multipart image input.
 
 ---
