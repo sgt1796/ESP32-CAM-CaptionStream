@@ -5,7 +5,7 @@ import os
 import tempfile
 from io import BytesIO
 from PIL import Image
-from typing import Callable, Any, Optional, Tuple
+from typing import Callable, Any, Optional, Tuple, List
 from dotenv import load_dotenv
 from fastapi import UploadFile
 from google import genai
@@ -28,6 +28,39 @@ class LLM:
         else:
             raise ValueError("Model not found")
         
+    def caption_with_objects(
+        self,
+        imgbase64: str,
+        objects: List[Tuple[str, float]] | None = None,
+        resize: Optional[Tuple[int, int]] = None,
+    ) -> str:
+        """
+        Wrapper that builds a prompt from detector output (e.g. YOLO)
+        and calls the usual image_caption().
+        Args
+        ----
+        imgbase64 : base-64 JPEG
+        objects   : list of (label, confidence) pairs *already in human words*
+        resize    : optional (w,h)  – passed straight through
+        """
+        if objects:
+            # "person 0.93, dog 0.71"
+            hint = ", ".join(f"{lbl} {conf:.2f}" for lbl, conf in objects)
+            prompt = (
+                "You are an image-captioning assistant.\n"
+                f"The detector sees: {hint}.\n"
+                "Write concise English sentence describing the scene. "
+                "Only mention objects if you also sees it."
+            )
+        else:
+            prompt = "You are an image-captioning assistant.\nDescribe this image."
+
+        return self.image_caption(
+            imgbase64=imgbase64,
+            prompt=prompt,
+            resize=resize,
+        )
+    
     def __process_image_input__(
         self, 
         imgbase64: Optional[str] = None, 
@@ -98,7 +131,7 @@ class LLM:
     def __init_gemini_image_recognize__(self, 
                                         imgbase64: Optional[str] = None, 
                                         image_file: Optional[UploadFile] = None, 
-                                        task: Optional[str] = "配诗",
+                                        task: Optional[str] = "caption",
                                         resize: Optional[Tuple[int, int]] = None
                                         ) -> str:
         """Recognize image with Gemini."""

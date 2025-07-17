@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>ESP32-CAM YOLO + LLM Caption</title>
+  <style>
+    body{margin:0;background:#000;color:#fff;
+         font-family:sans-serif;display:flex;flex-direction:column;align-items:center}
+    #vid{max-width:100%;height:auto}
+    #cap{padding:10px;font-size:1.1rem;text-align:center}
+  </style>
+</head>
+<body>
+  <img id="vid" src="{{ url_for('video_feed') }}">
+  <div id="cap">Loading caption…</div>
+
+  <script>
+    async function pollCaption(){
+      try{
+        const r = await fetch("{{ url_for('caption_api') }}");
+        const j = await r.json();
+        if (j.caption) document.getElementById("cap").innerText = j.caption;
+      }catch(e){ /* ignore */ }
+      setTimeout(pollCaption, 1000);        // poll once per second
+    }
+    pollCaption();
+  </script>
+</body>
+</html>

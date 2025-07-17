@@ -18,8 +18,8 @@ from flask import Flask, Response, render_template_string
 
 # ─── CONFIG ────────────────────────────────────────────────────────────────────
 ESP32_STREAM_URL = "http://192.168.0.199:81/stream"
-CAPTION_API_URL = None #"https://localhost/tinytalk/api/image/caption"
-CAPTION_INTERVAL = 2        # seconds
+CAPTION_API_URL = "https://localhost/tinytalk/api/image/caption"
+CAPTION_INTERVAL = 3        # seconds
 MODEL            = "openai" # or "gemini"
 VERIFY_SSL       = False    # self-signed TLS on localhost
 
