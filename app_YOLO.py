@@ -37,7 +37,7 @@ CAPTION_API_URL    = ""               # empty ⇒ use local LLM wrapper
 CAPTION_MODEL      = "openai"         # "openai" | "gemini"
 CAPTION_INTERVAL   = 3                # seconds between caption calls
 
-YOLO_MODEL_PATH    = "yolo11n.pt"     # CPU‑friendly nano model
+YOLO_MODEL_PATH    = "yolo11s.pt"     # CPU‑friendly nano model
 YOLO_CONF_THRESH   = 0.35             # detection confidence threshold
 USE_YOLO_TRACK     = True             # enable tracking overlay
 TRACKER_CFG        = "bytetrack.yaml" # or "botsort.yaml"
