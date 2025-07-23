@@ -6,11 +6,10 @@ A lightweight system that streams video from an ESP32-CAM and overlays real-time
 
 ## Features
 
-- 📷 Streams MJPEG video from ESP32-CAM
-- 🧠 Generates captions using OpenAI or Gemini APIs
-- 🌐 View live captioned stream in a browser (`http://localhost:5050`)
-- 🔁 Reconnects automatically on stream failure
-- 🧵 Runs captioning in the background using `asyncio`
+- Takes video stream from ip address (experimented with ESP32-CAM)
+- Object recognition use YOLO model
+- Use the YOLO result to hint LLM image caption
+- View live captioned stream in a browser
 
 ---
 
